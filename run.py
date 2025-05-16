@@ -33,34 +33,25 @@ def write_last_entries(file_path, last_entries):
         json.dump(last_entries, f)
 
 # Function to fetch and parse the feeds with a progress bar
-def fetch_feeds(feed_urls, last_entries, limit_per_feed=2):
+def fetch_feeds(feed_urls, limit_per_feed=2):
     summaries = []
     print("Fetching feeds...")
     
     for url in tqdm(feed_urls, desc="Fetching feeds", unit="feed"):
+        print(f"Processing feed: {url}")  # Indicate which feed is being processed
         feed = feedparser.parse(url)
-        last_entry_id = last_entries.get(url)  # Get the last entry for this feed
         new_entries = []  # List to hold new entries for this feed
-        for entry in feed.entries:
-            # Check if the entry is new
-            if last_entry_id and entry.link == last_entry_id:
-                print("No new entries found for this feed.")
-                break  # Exit if we reach the last processed entry
-            new_entries.append(entry)  # Add new entry to the list
-
-        # Limit to the specified number of new entries
-        for entry in new_entries[:limit_per_feed]:
+        
+        for entry in feed.entries[:limit_per_feed]:  # Pull up to 2 entries
             title = entry.title
             summary = entry.summary if 'summary' in entry else None
-            summaries.append({
+            new_entries.append({
                 'title': title,
                 'summary': summary,
                 'link': entry.link  # Store the link for the last entry
             })
 
-        # Update the last entry for this feed if there are new summaries
-        if summaries:
-            last_entries[url] = summaries[-1]['link']  # Update to the latest entry
+        summaries.extend(new_entries)  # Add new entries to the summaries list
 
     return summaries
 
@@ -74,9 +65,16 @@ def call_gemini_api(summaries, custom_prompt=""):
             {
                 "parts": [
                     {"text": custom_prompt},  # Use the custom prompt provided
+                    # {"text": "I need a summary of the following webpage content:"},
                     {"text": "\n".join(
                         [f"Title: {summary['title']}\nSummary: {summary['summary']}" for summary in summaries]
                     )},
+                    # {"text": "Don't use Markdown for formatting. No text in bold or italics."},
+                    # {"text": "Be brief and to the point but try to not skip the numbers."},
+                    # {"text": "Use bullet points (-) for easy scanning if possible."},
+                    # {"text": "Avoid repetition."},
+                    # {"text": "Summarize in Polish."},
+                    # {"text": "Convert numbers to metric units such as km, m, cm, kg."}
                 ]
             }
         ]
@@ -90,7 +88,12 @@ def call_gemini_api(summaries, custom_prompt=""):
     response = requests.post(api_url, json=prompt_data, headers=headers)
     
     if response.status_code == 200:
-        return response.json()  # Return the response from the API
+        # Extract the human-readable output from the response
+        if 'candidates' in response.json() and len(response.json()['candidates']) > 0:
+            return response.json()['candidates'][0]['content']['parts'][0]['text']
+        else:
+            print("No valid candidates returned.")
+            return "No summary available."
     else:
         print(f"Error calling Gemini API: {response.status_code} - {response.text}")
         return None
@@ -99,23 +102,17 @@ if __name__ == "__main__":
     # Load feeds from the JSON file
     RSS_FEEDS = load_feeds('feeds.json')
     
-    # Read the last processed entries
-    last_entries = read_last_entries('history.json')
-    
-    # Fetch and print summaries
-    summaries = fetch_feeds(RSS_FEEDS, last_entries)
+    # Fetch summaries without checking history.json
+    summaries = fetch_feeds(RSS_FEEDS, limit_per_feed=2)
     print()  # New line 
-    for summary in summaries:
-        print("-" * 40)  # Separator line for better readability
-        print(f"Title: {summary['title']}")
-        print(f"Summary: {summary['summary']}\n")
 
-    # Write the updated last entries to the JSON file
-    write_last_entries('history.json', last_entries)
+    # Prepare the custom prompt
+    custom_prompt = "I'm gonna share a list of website post/articles' titles and summaries. I want you to prepare a summary of topics covered in these articles. I want you to group them by topic, eg. Health/Sport/Technology/Education/IT/Marketing and then under each topic group you can put an executive summary kind of text explaining what's being discussed. If there are many articles for any given group you can rank them. Don't use Markdown in formatting, don't use any formatting. Summarize in English. Avoid repetition. Convert numbers to metrics units such as km, m, cm."
 
-    # Specify your custom prompt here
-    custom_prompt = "I'm gonna share a list of website post/articles' titles and summaries. I want you to prepare a summary of topics covered in these articles. I want you to group them by topic, eg. Health/Sport/Technology/Education/IT/Marketing and then under each topic group you can put an executive summary kind of text explaining what's being discussed. If there are many articles for any given group you can rank them. Don't use Markdown in formatting, don't use any formatting. Summarize in English. Avoid repetition. Convert numbers to metrics units such as km, m, cm."  # <-- Add your prompt message here
     # Call the Gemini API with the fetched summaries and the custom prompt
     gemini_response = call_gemini_api(summaries, custom_prompt)
+    
     if gemini_response:
-        print("Gemini API Response:", gemini_response)
+        # Print the human-readable output
+        print("Gemini API Response:\n")
+        print(gemini_response)  # Output the response in a readable format

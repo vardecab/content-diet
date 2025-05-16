@@ -8,9 +8,10 @@
 
 ## Release History
 
+- 0.4: Gemini now prepares an easier-to-read summary with clear grouping by topic.
 - 0.3: Gemini now prepares a summary from articles in the RSS feeds.
 - 0.2: Calling Gemini now works.
-- 0.1: Initial release: gets title and summary from RSS feeds.
+- 0.1: Initial release: gets titles and summaries from RSS feeds.
 
 ## Acknowledgements
 
