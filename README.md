@@ -4,12 +4,12 @@
 <br>
 ![](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-blue)
 
->Experimenting with getting summaries from RSS feeds.
+>Experimenting with getting an AI summary of content from RSS feeds.
 
 ## Release History
 
 v3
-- xxx
+- Just look at the newest entries in each feed since the last time script was run.
 
 v2
 - Updated Gemini API to 2.0 Flash from 1.5 Flash.

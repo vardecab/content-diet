@@ -5,6 +5,8 @@ TODO
 old/
 output/
 opmls/
+/#opmls
+summaries/
 config/
 prompts/
 feeds.json

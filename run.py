@@ -1,9 +1,10 @@
 import feedparser
 import json
 import os
+import time  # Import time module
 from tqdm import tqdm  # Import tqdm for the progress bar
 import requests  # Import requests for making API requests
-import datetime  # Ensure this import is at the top of your file
+from progress.spinner import Spinner  # Import the Spinner class from progress
 
 # Function to load the API key from the config file
 def load_api_key(file_path):
@@ -15,7 +16,7 @@ def load_api_key(file_path):
 def load_feeds(file_path):
     with open(file_path, 'r') as f:
         data = json.load(f)
-    print("Reading the JSON file with RSS feeds...")
+    print("\nReading the JSON file with RSS feeds...")
     print()  # New line 
     return data['feeds']
 
@@ -36,41 +37,64 @@ def write_last_entries(file_path, last_entries):
         json.dump(last_entries, f)
 
 # Function to fetch and parse the feeds with a progress bar
-def fetch_feeds(feed_urls, limit_per_feed=2):
+def fetch_feeds(feed_urls, history_file='history.json', limit_per_feed=2):
     summaries = []
-    print("Fetching feeds...")
+    new_entries_count = 0  # Initialize a counter for new entries
     
-    # Define the cutoff date
-    cutoff_date = datetime.datetime(2025, 5, 10)
+    # Read last entries from history.json
+    last_entries = read_last_entries(history_file)
 
-    for url in tqdm(feed_urls, desc="Fetching feeds", unit="feed"):
-        print(f"Processing feed: {url}")  # Indicate which feed is being processed
-        feed = feedparser.parse(url)
-        new_entries = []  # List to hold new entries for this feed
-        
-        for entry in feed.entries[:limit_per_feed]:  # Pull up to 2 entries
-            # Check for published date
-            if 'published_parsed' in entry:
-                published_date = datetime.datetime(*entry.published_parsed[:6])  # Convert to datetime object
-            elif 'pubDate' in entry:
-                published_date = datetime.datetime(*entry.pubDate_parsed[:6])  # Convert to datetime object
-            else:
-                continue  # Skip if no date is available
+    # Initialize the progress bar with total number of feeds
+    with tqdm(total=len(feed_urls), desc="Fetching feeds", unit="feed") as pbar:
+        for url in feed_urls:
+            print(f"Processing feed: {url}")  # Indicate which feed is being processed
+            feed = feedparser.parse(url)
+            new_entries = []  # List to hold new entries for this feed
             
-            # Check if the entry's published date is after the cutoff date
-            if published_date < cutoff_date:
-                continue  # Skip entries published before the cutoff date
+            # Get the last seen entry for this feed
+            last_seen_entry = last_entries.get(url, None)
+
+            # Process up to limit_per_feed entries per feed
+            entry_count = 0
+            for entry in feed.entries:  # No limit on entries
+                if last_seen_entry and entry.link == last_seen_entry:  # Check if the entry is the same as the last processed
+                    print(f"No new updates for feed: {url}\n")  # Indicate no new updates
+                    break  # Skip to the next feed
+                
+                if entry_count >= limit_per_feed:  # Stop after processing limit_per_feed entries
+                    break
+                
+                title = entry.title
+                summary = entry.summary if 'summary' in entry else None
+                new_entries.append({
+                    'title': title,
+                    'summary': summary,
+                    'link': entry.link  # Store the link for the last entry
+                })
+                entry_count += 1  # Increment the entry count
+
+            # Update the last seen entry for this feed with the topmost entry
+            if feed.entries:  # Check if there are any entries
+                last_entries[url] = feed.entries[0].link  # Update with the link of the topmost entry
+
+            summaries.extend(new_entries)  # Add new entries to the summaries list
+            new_entries_count += len(new_entries)  # Count new entries
             
-            title = entry.title
-            summary = entry.summary if 'summary' in entry else None
-            new_entries.append({
-                'title': title,
-                'summary': summary,
-                'link': entry.link  # Store the link for the last entry
-            })
+            pbar.update(1)  # Increment the progress bar by 1 for each feed processed
 
-        summaries.extend(new_entries)  # Add new entries to the summaries list
+    # Write the updated last entries back to history.json
+    write_last_entries(history_file, last_entries)
 
+    if new_entries_count == 0:
+        print("\nThere are no new updates.")  # Indicate no new updates
+        return  # Exit the function early if there are no new entries
+
+    print(f"\nTotal new entries found: {new_entries_count}")  # Summarize new entries
+
+    # Send summaries to Gemini API (this part is assumed to be here)
+    # send_to_gemini_api(summaries)
+
+    print("\nAll feeds have been fetched.")  # Indicate the end of the fetching process
     return summaries
 
 # Function to call the Gemini API with the fetched summaries
@@ -132,11 +156,19 @@ def call_gemini_api(summaries, custom_prompt=""):
         return None
 
 if __name__ == "__main__":
+    start_time = time.time()  # Record the start time
+
     # Load feeds from the JSON file
     RSS_FEEDS = load_feeds('feeds.json')
     
     # Fetch summaries without checking history.json
-    summaries = fetch_feeds(RSS_FEEDS, limit_per_feed=2)
+    summaries = fetch_feeds(RSS_FEEDS)
+
+    # Check if there are new entries before proceeding
+    if not summaries:  # If summaries is empty, there are no new entries
+        print("\nNo new entries to send to Gemini API. Exiting script.")
+        exit()  # Exit the script early
+
     print()  # New line 
     
     # Prepare the custom prompt
@@ -151,5 +183,21 @@ if __name__ == "__main__":
     
     if gemini_response:
         # Print the human-readable output
-        print("Gemini API Response:\n")
-        print(gemini_response)  # Output the response in a readable format
+        # print("Gemini API Response:\n")
+        # Write the response to a markdown file with the current timestamp
+        timestamp = time.strftime("%y%m%d-%H%M%S")  # Get the current timestamp
+        output_file = f"summaries/summary-{timestamp}.md"  # Create the filename
+        with open(output_file, 'w') as f:
+            f.write(gemini_response)  # Write the response to the file
+        print(f"\nResponse written to {output_file}")  # Confirm the file write
+
+    end_time = time.time()  # Record the end time
+    runtime = end_time - start_time  # Calculate the runtime
+
+    # Display runtime in a user-friendly format
+    if runtime < 60:
+        print(f"\nScript runtime: {runtime:.2f} seconds")
+    else:
+        minutes = int(runtime // 60)
+        seconds = runtime % 60
+        print(f"\nScript runtime: {minutes} minutes and {seconds:.2f} seconds")
