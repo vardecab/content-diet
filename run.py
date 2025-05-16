@@ -2,12 +2,15 @@ import feedparser
 import json
 import os
 from tqdm import tqdm  # Import tqdm for the progress bar
-import requests
+import requests  # Import requests for making API requests
+import datetime  # Ensure this import is at the top of your file
 
+# Function to load the API key from the config file
 def load_api_key(file_path):
     with open(file_path, 'r') as f:
-        data = json.load(f)
-    return data['Gemini_API_key']
+        config = json.load(f)
+    return config['Gemini_API_key']
+
 # Function to load RSS feeds from a JSON file
 def load_feeds(file_path):
     with open(file_path, 'r') as f:
@@ -37,12 +40,27 @@ def fetch_feeds(feed_urls, limit_per_feed=2):
     summaries = []
     print("Fetching feeds...")
     
+    # Define the cutoff date
+    cutoff_date = datetime.datetime(2025, 5, 10)
+
     for url in tqdm(feed_urls, desc="Fetching feeds", unit="feed"):
         print(f"Processing feed: {url}")  # Indicate which feed is being processed
         feed = feedparser.parse(url)
         new_entries = []  # List to hold new entries for this feed
         
         for entry in feed.entries[:limit_per_feed]:  # Pull up to 2 entries
+            # Check for published date
+            if 'published_parsed' in entry:
+                published_date = datetime.datetime(*entry.published_parsed[:6])  # Convert to datetime object
+            elif 'pubDate' in entry:
+                published_date = datetime.datetime(*entry.pubDate_parsed[:6])  # Convert to datetime object
+            else:
+                continue  # Skip if no date is available
+            
+            # Check if the entry's published date is after the cutoff date
+            if published_date < cutoff_date:
+                continue  # Skip entries published before the cutoff date
+            
             title = entry.title
             summary = entry.summary if 'summary' in entry else None
             new_entries.append({
@@ -55,26 +73,23 @@ def fetch_feeds(feed_urls, limit_per_feed=2):
 
     return summaries
 
+# Function to call the Gemini API with the fetched summaries
 def call_gemini_api(summaries, custom_prompt=""):
     api_key = load_api_key('config/config.json')  # Load the API key
-    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"  # Use the specified endpoint
+    # api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"  # Use the specified endpoint
+    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"  # Use the specified endpoint
 
     # Prepare the data to send to the Gemini API
+    input_text = "\n".join(
+        [f"Title: {summary['title']}\nSummary: {summary['summary']}\nURL: {summary['link']}" for summary in summaries]
+    )
+    
     prompt_data = {
         "contents": [
             {
                 "parts": [
                     {"text": custom_prompt},  # Use the custom prompt provided
-                    # {"text": "I need a summary of the following webpage content:"},
-                    {"text": "\n".join(
-                        [f"Title: {summary['title']}\nSummary: {summary['summary']}" for summary in summaries]
-                    )},
-                    # {"text": "Don't use Markdown for formatting. No text in bold or italics."},
-                    # {"text": "Be brief and to the point but try to not skip the numbers."},
-                    # {"text": "Use bullet points (-) for easy scanning if possible."},
-                    # {"text": "Avoid repetition."},
-                    # {"text": "Summarize in Polish."},
-                    # {"text": "Convert numbers to metric units such as km, m, cm, kg."}
+                    {"text": input_text}
                 ]
             }
         ]
@@ -84,13 +99,31 @@ def call_gemini_api(summaries, custom_prompt=""):
         "Content-Type": "application/json"
     }
     
+    # Calculate lengths
+    custom_prompt_length = len(custom_prompt)
+    input_length = len(input_text)
+    total_input_length = custom_prompt_length + input_length
+    
     # Make the API request
     response = requests.post(api_url, json=prompt_data, headers=headers)
     
     if response.status_code == 200:
         # Extract the human-readable output from the response
         if 'candidates' in response.json() and len(response.json()['candidates']) > 0:
-            return response.json()['candidates'][0]['content']['parts'][0]['text']
+            output_text = response.json()['candidates'][0]['content']['parts'][0]['text']
+            output_length = len(output_text)
+            
+            # Calculate total length and percentage
+            total_length = custom_prompt_length + input_length + output_length
+            percentage_of_limit = (total_length / 4000000) * 100
+            
+            print(f"Custom Prompt Length: {custom_prompt_length} characters")
+            print(f"Total Input Length: {total_input_length} characters")
+            print(f"Output Length from Gemini: {output_length} characters")
+            print(f"Total Length: {total_length} characters")
+            print(f"Percentage of token limit (4M chars): {percentage_of_limit:.2f}%")
+            
+            return output_text
         else:
             print("No valid candidates returned.")
             return "No summary available."
@@ -105,9 +138,13 @@ if __name__ == "__main__":
     # Fetch summaries without checking history.json
     summaries = fetch_feeds(RSS_FEEDS, limit_per_feed=2)
     print()  # New line 
-
+    
     # Prepare the custom prompt
-    custom_prompt = "I'm gonna share a list of website post/articles' titles and summaries. I want you to prepare a summary of topics covered in these articles. I want you to group them by topic, eg. Health/Sport/Technology/Education/IT/Marketing and then under each topic group you can put an executive summary kind of text explaining what's being discussed. If there are many articles for any given group you can rank them. Don't use Markdown in formatting, don't use any formatting. Summarize in English. Avoid repetition. Convert numbers to metrics units such as km, m, cm."
+    # Read the custom prompt from the prompt-2.txt file
+    with open("prompts/prompt-2.txt", 'r') as f:
+        custom_prompt = f.read().strip()  # Read and strip any extra whitespace
+
+    # custom_prompt = "I'm going to share a list of website post/article titles and their summaries. Your task is to create a concise, insightful overview of the topics covered. Group the articles by high-level category such as Health, Sports, Technology, Education, Marketing and so on. For each category: write a short executive summary (2–4 sentences) of what's being discussed in all the articles from that category, then include bullet points listing key themes, insights, data points, numbers, key takeaways or trends. Use numbers from articles if available and relevant. Convert to metric units: km, m, kg, etc. Avoid repeating ideas, and keep the output brief but information-rich. Summarize in easy to understand English. Include the URL (in parenthesis at the end of line) of the article for each bullet point summary only if the article is deemed important enough to include. Wish me a good read."
 
     # Call the Gemini API with the fetched summaries and the custom prompt
     gemini_response = call_gemini_api(summaries, custom_prompt)

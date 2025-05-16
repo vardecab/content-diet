@@ -1,9 +1,13 @@
-/#old/
 TODO
 # README.md
 .DS_Store
 
+old/
+output/
+opmls/
+config/
+prompts/
 feeds.json
 history.json
-config/
 prompt.txt
+test.*

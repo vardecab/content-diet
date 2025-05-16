@@ -8,10 +8,19 @@
 
 ## Release History
 
-- 0.4: Gemini now prepares an easier-to-read summary with clear grouping by topic.
-- 0.3: Gemini now prepares a summary from articles in the RSS feeds.
-- 0.2: Calling Gemini now works.
-- 0.1: Initial release: gets titles and summaries from RSS feeds.
+v3
+- xxx
+
+v2
+- Updated Gemini API to 2.0 Flash from 1.5 Flash.
+- Improved the prompt.
+- Showing token limit.
+
+v1
+- Gemini now prepares an easier-to-read summary with clear grouping by topic.
+- Gemini now prepares a summary from articles in the RSS feeds.
+- Calling Gemini now works.
+- Initial release: gets titles and summaries from RSS feeds.
 
 ## Acknowledgements
 
