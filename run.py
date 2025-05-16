@@ -4,13 +4,58 @@ import os
 import time  # Import time module
 from tqdm import tqdm  # Import tqdm for the progress bar
 import requests  # Import requests for making API requests
-from progress.spinner import Spinner  # Import the Spinner class from progress
+# from progress.spinner import Spinner  # Import the Spinner class from progress
 
 # Function to load the API key from the config file
 def load_api_key(file_path):
     with open(file_path, 'r') as f:
         config = json.load(f)
-    return config['Gemini_API_key']
+    return config['Gemini_API_key'], config['Notion_secret']  # Return both keys
+
+# Function to create a new page in Notion with a description
+def create_notion_page_with_description(notion_token, database_id, title, description):
+    url = "https://api.notion.com/v1/pages"
+    headers = {
+        "Authorization": f"Bearer {notion_token}",
+        "Content-Type": "application/json",
+        "Notion-Version": "2022-06-28"
+    }
+    data = {
+        "parent": {"database_id": database_id},
+        "properties": {
+            "Name": {
+                "title": [
+                    {
+                        "text": {
+                            "content": title
+                        }
+                    }
+                ]
+            }
+        },
+        "children": [
+            {
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [
+                        {
+                            "type": "text",
+                            "text": {
+                                "content": description
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+
+    response = requests.post(url, headers=headers, json=data)
+    if response.status_code == 200:
+        print("✅ Page created successfully with description.")
+    else:
+        print(f"❌ Failed: {response.status_code} - {response.text}")
 
 # Function to load RSS feeds from a JSON file
 def load_feeds(file_path):
@@ -99,7 +144,7 @@ def fetch_feeds(feed_urls, history_file='history.json', limit_per_feed=2):
 
 # Function to call the Gemini API with the fetched summaries
 def call_gemini_api(summaries, custom_prompt=""):
-    api_key = load_api_key('config/config.json')  # Load the API key
+    api_key = load_api_key('config/config.json')[0]  # Load the API key
     # api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"  # Use the specified endpoint
     api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"  # Use the specified endpoint
 
@@ -158,6 +203,9 @@ def call_gemini_api(summaries, custom_prompt=""):
 if __name__ == "__main__":
     start_time = time.time()  # Record the start time
 
+    # Load API keys from the config file
+    gemini_api_key, notion_token = load_api_key('config/config.json')  # Load both keys
+
     # Load feeds from the JSON file
     RSS_FEEDS = load_feeds('feeds.json')
     
@@ -172,7 +220,6 @@ if __name__ == "__main__":
     print()  # New line 
     
     # Prepare the custom prompt
-    # Read the custom prompt from the prompt-2.txt file
     with open("prompts/prompt-2.txt", 'r') as f:
         custom_prompt = f.read().strip()  # Read and strip any extra whitespace
 
@@ -182,14 +229,26 @@ if __name__ == "__main__":
     gemini_response = call_gemini_api(summaries, custom_prompt)
     
     if gemini_response:
-        # Print the human-readable output
-        # print("Gemini API Response:\n")
         # Write the response to a markdown file with the current timestamp
         timestamp = time.strftime("%y%m%d-%H%M%S")  # Get the current timestamp
         output_file = f"summaries/summary-{timestamp}.md"  # Create the filename
         with open(output_file, 'w') as f:
             f.write(gemini_response)  # Write the response to the file
         print(f"\nResponse written to {output_file}")  # Confirm the file write
+
+        # Load the summary from the markdown file
+        if os.path.exists(output_file):  # Check if the file exists
+            with open(output_file, 'r') as f:
+                description = f.read()  # Read the content of the markdown file
+
+            # Set the title as the name of the markdown file (without the extension)
+            title = os.path.splitext(os.path.basename(output_file))[0]  # Get the filename without extension
+
+            # Create a new page in Notion with the summary
+            database_id = "1f5183e9c9f880d5a450e0cd861358d6"  # Replace with your Notion database ID
+            create_notion_page_with_description(notion_token, database_id, title, description)
+        else:
+            print(f"❌ Summary file {output_file} does not exist.")
 
     end_time = time.time()  # Record the end time
     runtime = end_time - start_time  # Calculate the runtime

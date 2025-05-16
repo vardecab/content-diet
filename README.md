@@ -8,6 +8,9 @@
 
 ## Release History
 
+v4
+- When summary is ready, upload it to Notion so it's accessible on mobile.
+
 v3
 - Just look at the newest entries in each feed since the last time script was run.
 
