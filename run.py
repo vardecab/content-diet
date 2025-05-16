@@ -2,7 +2,12 @@ import feedparser
 import json
 import os
 from tqdm import tqdm  # Import tqdm for the progress bar
+import requests
 
+def load_api_key(file_path):
+    with open(file_path, 'r') as f:
+        data = json.load(f)
+    return data['Gemini_API_key']
 # Function to load RSS feeds from a JSON file
 def load_feeds(file_path):
     with open(file_path, 'r') as f:
@@ -33,14 +38,9 @@ def fetch_feeds(feed_urls, last_entries, limit_per_feed=2):
     print("Fetching feeds...")
     
     for url in tqdm(feed_urls, desc="Fetching feeds", unit="feed"):
-        print(f"Processing feed: {url}")  # Indicate which feed is being processed
         feed = feedparser.parse(url)
         last_entry_id = last_entries.get(url)  # Get the last entry for this feed
         new_entries = []  # List to hold new entries for this feed
-        
-        # Determine the limit based on whether the feed has an entry in history.json
-        current_limit = 3 if last_entry_id is None else None  # Use None for no limit
-        
         for entry in feed.entries:
             # Check if the entry is new
             if last_entry_id and entry.link == last_entry_id:
@@ -48,11 +48,8 @@ def fetch_feeds(feed_urls, last_entries, limit_per_feed=2):
                 break  # Exit if we reach the last processed entry
             new_entries.append(entry)  # Add new entry to the list
 
-        # Limit to the specified number of new entries if applicable
-        if current_limit is not None:
-            new_entries = new_entries[:current_limit]  # Limit to 3 entries if applicable
-
-        for entry in new_entries:
+        # Limit to the specified number of new entries
+        for entry in new_entries[:limit_per_feed]:
             title = entry.title
             summary = entry.summary if 'summary' in entry else None
             summaries.append({
@@ -66,6 +63,32 @@ def fetch_feeds(feed_urls, last_entries, limit_per_feed=2):
             last_entries[url] = summaries[-1]['link']  # Update to the latest entry
 
     return summaries
+
+def call_gemini_api(prompt):
+    api_key = load_api_key('config/config.json')
+    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+
+    # Gemini expects this structure
+    payload = {
+        "contents": [
+            {
+                "parts": [{"text": prompt}]
+            }
+        ]
+    }
+
+    headers = {
+        "Content-Type": "application/json"
+    }
+
+    response = requests.post(api_url, headers=headers, json=payload)
+
+    if response.status_code == 200:
+        result = response.json()
+        return result["candidates"][0]["content"]["parts"][0]["text"]
+    else:
+        print(f"Error calling Gemini API: {response.status_code} - {response.text}")
+        return None
 
 if __name__ == "__main__":
     # Load feeds from the JSON file
@@ -84,3 +107,9 @@ if __name__ == "__main__":
 
     # Write the updated last entries to the JSON file
     write_last_entries('history.json', last_entries)
+
+    # Test the Gemini API with a simple prompt
+    test_prompt = "hello Gemini"
+    gemini_response = call_gemini_api(test_prompt)
+    if gemini_response:
+        print("Gemini API Response for test prompt:", gemini_response)
