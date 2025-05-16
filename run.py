@@ -64,28 +64,33 @@ def fetch_feeds(feed_urls, last_entries, limit_per_feed=2):
 
     return summaries
 
-def call_gemini_api(prompt):
-    api_key = load_api_key('config/config.json')
-    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+def call_gemini_api(summaries, custom_prompt=""):
+    api_key = load_api_key('config/config.json')  # Load the API key
+    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"  # Use the specified endpoint
 
-    # Gemini expects this structure
-    payload = {
+    # Prepare the data to send to the Gemini API
+    prompt_data = {
         "contents": [
             {
-                "parts": [{"text": prompt}]
+                "parts": [
+                    {"text": custom_prompt},  # Use the custom prompt provided
+                    {"text": "\n".join(
+                        [f"Title: {summary['title']}\nSummary: {summary['summary']}" for summary in summaries]
+                    )},
+                ]
             }
         ]
     }
-
+    
     headers = {
         "Content-Type": "application/json"
     }
-
-    response = requests.post(api_url, headers=headers, json=payload)
-
+    
+    # Make the API request
+    response = requests.post(api_url, json=prompt_data, headers=headers)
+    
     if response.status_code == 200:
-        result = response.json()
-        return result["candidates"][0]["content"]["parts"][0]["text"]
+        return response.json()  # Return the response from the API
     else:
         print(f"Error calling Gemini API: {response.status_code} - {response.text}")
         return None
@@ -108,8 +113,9 @@ if __name__ == "__main__":
     # Write the updated last entries to the JSON file
     write_last_entries('history.json', last_entries)
 
-    # Test the Gemini API with a simple prompt
-    test_prompt = "hello Gemini"
-    gemini_response = call_gemini_api(test_prompt)
+    # Specify your custom prompt here
+    custom_prompt = "I'm gonna share a list of website post/articles' titles and summaries. I want you to prepare a summary of topics covered in these articles. I want you to group them by topic, eg. Health/Sport/Technology/Education/IT/Marketing and then under each topic group you can put an executive summary kind of text explaining what's being discussed. If there are many articles for any given group you can rank them. Don't use Markdown in formatting, don't use any formatting. Summarize in English. Avoid repetition. Convert numbers to metrics units such as km, m, cm."  # <-- Add your prompt message here
+    # Call the Gemini API with the fetched summaries and the custom prompt
+    gemini_response = call_gemini_api(summaries, custom_prompt)
     if gemini_response:
-        print("Gemini API Response for test prompt:", gemini_response)
+        print("Gemini API Response:", gemini_response)
