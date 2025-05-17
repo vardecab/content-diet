@@ -53,9 +53,9 @@ def create_notion_page_with_description(notion_token, database_id, title, descri
 
     response = requests.post(url, headers=headers, json=data)
     if response.status_code == 200:
-        print("✅ Page created successfully with description.")
+        print("\n✅ Page created successfully with description.")
     else:
-        print(f"❌ Failed: {response.status_code} - {response.text}")
+        print(f"\n❌ Failed: {response.status_code} - {response.text}")
 
 # Function to load RSS feeds from a JSON file
 def load_feeds(file_path):
@@ -220,7 +220,8 @@ if __name__ == "__main__":
     print()  # New line 
     
     # Prepare the custom prompt
-    with open("prompts/prompt-2.txt", 'r') as f:
+    # with open("prompts/prompt-2.txt", 'r') as f:
+    with open("prompts/prompt-3.txt", 'r') as f:
         custom_prompt = f.read().strip()  # Read and strip any extra whitespace
 
     # custom_prompt = "I'm going to share a list of website post/article titles and their summaries. Your task is to create a concise, insightful overview of the topics covered. Group the articles by high-level category such as Health, Sports, Technology, Education, Marketing and so on. For each category: write a short executive summary (2–4 sentences) of what's being discussed in all the articles from that category, then include bullet points listing key themes, insights, data points, numbers, key takeaways or trends. Use numbers from articles if available and relevant. Convert to metric units: km, m, kg, etc. Avoid repeating ideas, and keep the output brief but information-rich. Summarize in easy to understand English. Include the URL (in parenthesis at the end of line) of the article for each bullet point summary only if the article is deemed important enough to include. Wish me a good read."
