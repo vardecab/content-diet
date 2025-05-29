@@ -1,0 +1,70 @@
+MVP/v1:
+  ✔ create a (JSON) list of RSS feeds @done(25-05-16 17:51)
+    ✔ blogs/websites @started(25-05-16 17:06) @done(25-05-16 17:51) @lasted(45m52s)
+  ✔ build RSS feed parser @done(25-05-16 17:06)
+  ✔ call Gemini API @done(25-05-16 17:06)
+  ✔ analyze data from feeds using Gemini @started(25-05-16 17:46) @done(25-05-16 17:48) @lasted(2m27s)
+    
+v2:
+  ✔ add more feeds @done(25-05-16 21:05)
+    ✔ add more websites @done(25-05-16 21:02)
+  ✔ improve prompt => more detailed summary, shows NBA game scores, mentions numbers, uses bullet points, etc. @done(25-05-16 20:15)
+  ✔ show token limit @done(25-05-16 20:15)
+  ✔ Update Gemini API to 2.0 Flash from 1.5 Flash @done(25-05-16 21:04)
+    
+v3:
+  ✔ add limit and history so it takes just the latest one since the last check @started(25-05-16 17:48) @done(25-05-16 23:10) @lasted(5h23m)
+  ✔ test @done(25-05-17 01:16)
+  
+v4: 
+  ✔ mobile MVP @done(25-05-29 02:15)
+    ✘ Notion @cancelled(25-05-29 02:15)
+      ✔ `.md` -> Notion page, new page per summary 1:1 (nicely formatted, ready for mobile) @done(25-05-17 01:34)
+      ✔ merge with `main` @done(25-05-17 11:00)
+      ✘ fix markdown formatting @cancelled(25-05-29 02:15)
+      ✘ Notion error: `text.content.length should be ≤ 2000, instead was 13412` @cancelled(25-05-29 02:15)
+    ✔ Obsidian @done(25-05-29 02:12)
+        ✔ save in Obsidian folder @done(25-05-25 09:44)
+        ✔ auto save in Obsidian folder too @done(25-05-29 02:12)
+        ✔ add tags @done(25-05-29 02:14)
+  ✔ finess the prompt @started(25-05-25 11:43) @done(25-05-29 02:16) @lasted(3d14h33m9s)
+    ✔ select some feeds and entries, save offline - use for testing without fetching live feeds @done(25-05-25 02:33)
+    ✔ add more feeds @done(25-05-29 02:16)
+    ✔ Twitter/X @done(25-05-25 11:03)
+    ✔ YouTube @started(25-05-25 11:43) @done(25-05-29 02:16) @lasted(3d14h33m38s)
+
+v5:
+  ☐ add back The Verge feed?
+  ☐ importance ranking 1.0 @started(25-05-25 11:43)
+    ☐ tagging system like in https://github.com/Tiendil/feeds.fun 
+  ☐ token limit, 32k characters
+    ☐ use `gemini-2.5-flash-preview-05-20`
+
+vX:
+  ☐ add more feeds 
+    ☐ email newsletters via Kill the Newsletter
+    ☐ Reddit
+    ☐ more YouTube channels
+    ☐ Hacker News
+    ☐ Mastodon
+    ☐ Instapaper
+    ☐ Bluesky
+    ☐ podcasts?
+  ☐ disable asking for Gemini API input y/n so it works automatically in the background
+    
+Nice to haves:
+  ☐ OPML import with feeds
+  ☐ podcast from the summary?
+    ☐ there's an endpoint in Gemini API for generating voice/podcasts...
+  ☐ system notification, how many new posts
+  ☐ importance ranking 2.0
+
+Mobile 2.0:
+  ☐ advanced approach
+    ☐ create web server (FastAPI / Flask)
+    ☐ build mobile UI (React / HTML/CSS/JS)
+    ☐ test
+    ☐ deploy
+
+Q's: 
+  ✔ token size? 4M characters = prompt + input + output @done(25-05-16 20:15)
