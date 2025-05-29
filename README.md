@@ -14,6 +14,7 @@ I found myself spending too much time reading across YouTube, X, newsletters, an
 
 ## Release History
 
+Check [TODO](https://github.com/vardecab/content-diet/blob/main/TODO) file for the full changelog and roadmap.
 <!-- v4
 - When summary is ready, upload it to Notion so it's accessible on mobile.
 
@@ -34,7 +35,7 @@ v1
 ## Acknowledgements
 
 - Cursor
-- Gemini API
+- Gemini API ![Google Gemini](https://img.shields.io/badge/google%20gemini-8E75B2?style=for-the-badge&logo=google%20gemini&logoColor=white)
 - 3rd partyPython libs:
     - [feedparser](https://github.com/kurtmckee/feedparser) to read RSS feeds
     - [tqdm](https://github.com/tqdm/tqdm) to show progress bars in the terminal
