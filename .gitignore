@@ -1,4 +1,4 @@
-TODO
+# TODO
 # README.md
 .DS_Store
 
@@ -14,3 +14,7 @@ history.json
 prompt.txt
 test.*
 test*.*
+move-to-obsidian.sh
+api/
+feeds/
+offline/
