@@ -35,7 +35,7 @@ v1
 ## Acknowledgements
 
 - Cursor
-- Gemini API ![Google Gemini](https://img.shields.io/badge/google%20gemini-8E75B2?style=for-the-badge&logo=google%20gemini&logoColor=white)
+- Gemini API
 - 3rd partyPython libs:
     - [feedparser](https://github.com/kurtmckee/feedparser) to read RSS feeds
     - [tqdm](https://github.com/tqdm/tqdm) to show progress bars in the terminal
