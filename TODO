@@ -48,6 +48,8 @@ v5:
 
 v6:
   ☐ importance ranking 1.0 @high @started(25-05-25 11:43)
+  ☐ podcast from the summary? @high
+    ✘ there's an endpoint in Gemini API for generating voice/podcasts -> https://ai.google.dev/gemini-api/docs/speech-generation (but paid :/) @cancelled(25-05-31 23:44)
 
 vX:
   ☐ add more feeds @high
@@ -66,8 +68,6 @@ vX:
 Nice to haves:
   ☐ OPML import with feeds @low
   ☐ suggest sources to follow to new users if they don't have OPML and they don't know RSS @low
-  ☐ podcast from the summary? @high
-    ☐ there's an endpoint in Gemini API for generating voice/podcasts...
   ☐ importance ranking 2.0 @low
 
 Mobile 2.0:

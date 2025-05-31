@@ -4,7 +4,11 @@
 <br>
 ![](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-blue)
 
->Playing with AI to build a personal daily news channel — one smart summary a day from YouTube, X, and websites I follow, all powered by RSS.
+>Playing with AI to build a personal daily news channel — one smart summary a day from YouTube, X, websites and newsletters I follow, all powered by RSS.
+
+### Idea
+
+Throw all your sources (newsletters, people on X, YouTube channels, websites you read) to AI and get a nice, short summary.
 
 ### Why? 
 
