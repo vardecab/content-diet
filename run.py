@@ -1,62 +1,18 @@
-import feedparser
-import json
-import os
-import time  # Import time module
+import feedparser # Import feedparser to parse RSS feeds
+import json # Import json to parse JSON files
+import os # Import os to check if files exist
+import time # Import time to calculate runtime
 from tqdm import tqdm  # Import tqdm for the progress bar
 import requests  # Import requests for making API requests
-# from progress.spinner import Spinner  # Import the Spinner class from progress
-import shutil  # Import shutil for copying files
+import shutil  # Import shutil for copying .md summary to Obsidian 
+import platform # Import platform to check the operating system
+import subprocess # Import subprocess for running shell commands
 
 # Function to load the API key from the config file
 def load_api_key(file_path):
     with open(file_path, 'r') as f:
         config = json.load(f)
     return config['Gemini_API_key'], config['Notion_secret']  # Return both keys
-
-# Function to create a new page in Notion with a description
-# def create_notion_page_with_description(notion_token, database_id, title, description):
-#     url = "https://api.notion.com/v1/pages"
-#     headers = {
-#         "Authorization": f"Bearer {notion_token}",
-#         "Content-Type": "application/json",
-#         "Notion-Version": "2022-06-28"
-#     }
-#     data = {
-#         "parent": {"database_id": database_id},
-#         "properties": {
-#             "Name": {
-#                 "title": [
-#                     {
-#                         "text": {
-#                             "content": title
-#                         }
-#                     }
-#                 ]
-#             }
-#         },
-#         "children": [
-#             {
-#                 "object": "block",
-#                 "type": "paragraph",
-#                 "paragraph": {
-#                     "rich_text": [
-#                         {
-#                             "type": "text",
-#                             "text": {
-#                                 "content": description
-#                             }
-#                         }
-#                     ]
-#                 }
-#             }
-#         ]
-#     }
-
-#     response = requests.post(url, headers=headers, json=data)
-#     if response.status_code == 200:
-#         print("\n✅ Page created successfully with description.")
-#     else:
-#         print(f"\n❌ Failed: {response.status_code} - {response.text}")
 
 # Function to load RSS feeds from a JSON file
 def load_feeds(file_path):
@@ -154,7 +110,10 @@ def fetch_feeds(feed_urls, history_file='history.json'):
 # Function to call the Gemini API with the fetched summaries
 def call_gemini_api(summaries, custom_prompt=""):
     api_key = load_api_key('api/config.json')[0]  # Load the API key
+    # Gemini API URL
+    # Gemini 1.5 Flash
     # api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"  # Use the specified endpoint
+    # Gemini 2.0 Flash
     # api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"  # Use the specified endpoint
     api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key={api_key}"  # Use the specified endpoint
 
@@ -184,7 +143,9 @@ def call_gemini_api(summaries, custom_prompt=""):
     total_input_length = custom_prompt_length + input_length
     
     # Make the API request
-    response = requests.post(api_url, json=prompt_data, headers=headers)
+    print("\nCalling Gemini API...")
+    with tqdm(desc="Generating summary", leave=False) as pbar:
+        response = requests.post(api_url, json=prompt_data, headers=headers)
     
     if response.status_code == 200:
         # Extract the human-readable output from the response
@@ -193,12 +154,13 @@ def call_gemini_api(summaries, custom_prompt=""):
             output_length = len(output_text)
             
             # Calculate total length and percentage
-            total_length = custom_prompt_length + input_length + output_length
-            percentage_of_limit = (total_length / 4000000) * 100
+            # total_length = custom_prompt_length + input_length + output_length
+            # percentage_of_limit = (total_length / 4000000) * 100
             
             print(f"Custom prompt length: {custom_prompt_length} characters")
-            print(f"Total input length: {total_input_length} characters / 4,194,304 ({total_input_length / 4194304:.2%})")
-            print(f"Output length from Gemini: {output_length} characters / 32,768 ({output_length / 32768:.2%})")
+            # Format total_input_length and output_length with thousands separators and as whole numbers
+            print(f"Total input length: {total_input_length:,.0f} characters / 4,194,304 ({total_input_length / 4194304:.2%})")
+            print(f"Output length from Gemini: {output_length:,.0f} characters / 262,144 ({output_length / 262144:.2%})")
             # print(f"Total length: {total_length} characters")
             # print(f"Percentage of token limit (4M chars): {percentage_of_limit:.2f}%")
             
@@ -210,6 +172,20 @@ def call_gemini_api(summaries, custom_prompt=""):
         print(f"Error calling Gemini API: {response.status_code} - {response.text}")
         return None
 
+# Function to open Obsidian on macOS
+def open_obsidian_on_macos():
+    if platform.system() == "Darwin":  # Check if the OS is macOS
+        try:
+            print("\nAttempting to open Obsidian...")
+            subprocess.run(["open", "-a", "Obsidian"], check=True)
+            print("Obsidian opened successfully.")
+        except subprocess.CalledProcessError as e:
+            print(f"Error opening Obsidian: {e}")
+        except FileNotFoundError:
+            print("Error: 'open' command not found. Are you on macOS?")
+    else:
+        print("\nNot on macOS. Skipping Obsidian launch.")
+
 if __name__ == "__main__":
     start_time = time.time()  # Record the start time
 
@@ -218,13 +194,15 @@ if __name__ == "__main__":
 
     # Load feeds from the separated JSON files
     # print("\nReading the JSON files with RSS feeds...")
-    website_feeds = load_feeds('feeds/feeds-websites.json')
+    websites_feeds = load_feeds('feeds/feeds-websites.json')
     print("Reading websites RSS feeds...")
     x_feeds = load_feeds('feeds/feeds-x.json')
     print("Reading X RSS feeds...")
     youtube_feeds = load_feeds('feeds/feeds-youtube.json')  # Load YouTube feeds
     print("Reading YouTube RSS feeds...")
-    RSS_FEEDS = website_feeds + x_feeds + youtube_feeds  # Combine all feeds
+    newsletters_feeds = load_feeds('feeds/feeds-newsletters.json') # Load Newsletter feeds
+    print("Reading newsletters RSS feeds...")
+    RSS_FEEDS = websites_feeds + x_feeds + youtube_feeds + newsletters_feeds # Combine all feeds
     
     # Fetch summaries, now using history.json to filter
     summaries = fetch_feeds(RSS_FEEDS, history_file='feeds/history.json') # Pass history file path
@@ -237,11 +215,8 @@ if __name__ == "__main__":
     print()  # New line 
     
     # Prepare the custom prompt
-    # with open("prompts/prompt-2.txt", 'r') as f:
     with open("prompts/prompt-6.txt", 'r') as f:
         custom_prompt = f.read().strip()  # Read and strip any extra whitespace
-
-    # custom_prompt = "I'm going to share a list of website post/article titles and their summaries. Your task is to create a concise, insightful overview of the topics covered. Group the articles by high-level category such as Health, Sports, Technology, Education, Marketing and so on. For each category: write a short executive summary (2–4 sentences) of what's being discussed in all the articles from that category, then include bullet points listing key themes, insights, data points, numbers, key takeaways or trends. Use numbers from articles if available and relevant. Convert to metric units: km, m, kg, etc. Avoid repeating ideas, and keep the output brief but information-rich. Summarize in easy to understand English. Include the URL (in parenthesis at the end of line) of the article for each bullet point summary only if the article is deemed important enough to include. Wish me a good read."
 
     # Call the Gemini API with the fetched summaries and the custom prompt
     gemini_response = call_gemini_api(summaries, custom_prompt)
@@ -255,23 +230,7 @@ if __name__ == "__main__":
         print(f"\nResponse written to {output_file}")  # Confirm the file write
         destination_folder = "/Users/q/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vaultomix/content-diet/summaries"
         shutil.copy(output_file, destination_folder)
-        print("File copied successfully to Obsidian.")
-        
-        # Notion integration
-        # Load the summary from the markdown file
-        # if os.path.exists(output_file):  # Check if the file exists
-        #     with open(output_file, 'r') as f:
-        #         description = f.read()  # Read the content of the markdown file
-
-        #     # Set the title as the name of the markdown file (without the extension)
-        #     title = os.path.splitext(os.path.basename(output_file))[0]  # Get the filename without extension
-
-        #     # Create a new page in Notion with the summary
-        #     database_id = "1f5183e9c9f880d5a450e0cd861358d6"  # Replace with your Notion database ID
-        #     create_notion_page_with_description(notion_token, database_id, title, description)
-        # else:
-        #     print(f"❌ Summary file {output_file} does not exist.")
-        
+        print("\nFile copied successfully to Obsidian.")
 
     end_time = time.time()  # Record the end time
     runtime = end_time - start_time  # Calculate the runtime
@@ -282,4 +241,7 @@ if __name__ == "__main__":
     else:
         minutes = int(runtime // 60)
         seconds = runtime % 60
-        print(f"\nScript runtime: {minutes} minutes and {seconds:.2f} seconds")
+        print(f"\nScript runtime: {minutes} minutes and {round(seconds)} seconds")
+
+    # Call the function to open Obsidian
+    open_obsidian_on_macos()

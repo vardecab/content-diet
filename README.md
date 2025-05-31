@@ -10,7 +10,9 @@
 
 There’s just too much content every day. Most of it is noise, and a lot becomes irrelevant within 24 hours. 
 
-I found myself spending too much time reading across YouTube, X, newsletters, and websites — only to realize most of it didn’t stick or help me grow. I needed a smarter, faster way to catch the valuable stuff without falling into a daily time sink.
+I found myself spending too much time reading across YouTube, X, newsletters, and websites — only to realize most of it didn’t stick or help me grow. I needed a smarter, faster way to catch the valuable stuff without falling into a daily time sink. Ideally it's gonna be a podcast, but for now - it's a written digest.
+
+Think of it as putting your information consumption on a _diet_ — cutting out the junk content and keeping only the nutritious bits that actually matter.
 
 ## Release History
 
@@ -36,7 +38,7 @@ v1
 
 - Cursor
 - Gemini API
-- 3rd partyPython libs:
+- 3rd party Python libs:
     - [feedparser](https://github.com/kurtmckee/feedparser) to read RSS feeds
     - [tqdm](https://github.com/tqdm/tqdm) to show progress bars in the terminal
     - [requests](https://github.com/psf/requests) to access feeds and APIs

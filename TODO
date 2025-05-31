@@ -33,37 +33,49 @@ v4:
     ✔ Twitter/X @done(25-05-25 11:03)
     ✔ YouTube @started(25-05-25 11:43) @done(25-05-29 02:16) @lasted(3d14h33m38s)
 
+v5: 
+  ✔ add more feeds @done(25-05-29 15:35)
+    ✔ more YouTube channels @high @done(25-05-29 15:35)
+      ✔ do a Google Takeout to get all subscriptions @started(25-05-29 14:12) @done(25-05-29 14:26) @lasted(14m34s)
+      ✔ add manually @done(25-05-29 15:35)
+    ✔ add back The Verge feed? @low @done(25-05-30 11:48)
+    ✔ email newsletters via Kill the Newsletter @high @started(25-05-31 23:18) @done(25-05-31 23:39) @lasted(21m3s)
+  ✔ add tags (inspo: https://github.com/Tiendil/feeds.fun) @done(25-05-30 11:47)
+  ✔ token limit, currently @ 32k characters with 2.0 Flash @high @done(25-05-29 14:03)
+    ✔ use `gemini-2.5-flash-preview-05-20` @done(25-05-29 14:03)
+      ✔ 65,536 output tokens = 262,144 characters @done(25-05-29 14:03)
+    ✔ update limits info in code @done(25-05-29 14:02)
+
+v6:
+  ☐ importance ranking 1.0 @high @started(25-05-25 11:43)
+
 vX:
-  ☐ add back The Verge feed?
-  ☐ importance ranking 1.0 @started(25-05-25 11:43)
-    ☐ tagging system like in https://github.com/Tiendil/feeds.fun 
-  ☐ token limit, 32k characters
-    ☐ use `gemini-2.5-flash-preview-05-20`  
-  ☐ add more feeds 
-    ☐ email newsletters via Kill the Newsletter
-    ☐ Reddit
-    ☐ more YouTube channels
-    ☐ Hacker News
-    ☐ Mastodon
-    ☐ Instapaper
-    ☐ Bluesky
-    ☐ podcasts?
-  ☐ work in background
+  ☐ add more feeds @high
+    ☐ Reddit @low
+    ☐ Hacker News @low
+    ☐ Mastodon @low
+    ✘ Instapaper @low @cancelled(25-05-30 11:48)
+    ☐ Bluesky @low
+    ☐ podcasts? @high
+  ☐ work in background @high
     ☐ disable asking for Gemini API input y/n so it works automatically in the background
-    ☐ system notification, how many new posts
+    ☐ system notification: how many new posts
+    ☐ add to Shortcuts so it can be used on demand
+  ☐ change the summary file name to something more cool like `Daily Beat` or `The Daily`
     
 Nice to haves:
-  ☐ OPML import with feeds
-  ☐ podcast from the summary?
+  ☐ OPML import with feeds @low
+  ☐ suggest sources to follow to new users if they don't have OPML and they don't know RSS @low
+  ☐ podcast from the summary? @high
     ☐ there's an endpoint in Gemini API for generating voice/podcasts...
-  ☐ importance ranking 2.0
+  ☐ importance ranking 2.0 @low
 
 Mobile 2.0:
-  ☐ advanced approach
+  ☐ advanced approach @low
     ☐ create web server (FastAPI / Flask)
     ☐ build mobile UI (React / HTML/CSS/JS)
     ☐ test
     ☐ deploy
 
 Q's: 
-  ✔ token size? 4M characters = prompt + input + output @done(25-05-16 20:15)
+  ✔ token size? => 4M characters in total = prompt + input + output buuut only 32k in output @done(25-05-16 20:15)

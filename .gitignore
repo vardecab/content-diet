@@ -1,7 +1,7 @@
 # TODO
 # README.md
 .DS_Store
-
+.vscode
 old/
 output/
 opmls/
@@ -18,3 +18,4 @@ move-to-obsidian.sh
 api/
 feeds/
 offline/
+screenshots/
